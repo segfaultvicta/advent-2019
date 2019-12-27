@@ -1,0 +1,298 @@
+<head>
+    <link href="https://unpkg.com/nes.css@latest/css/nes.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <style>
+        html,
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #212529;
+        }
+
+        #header {
+            display: flex;
+        }
+
+        #year-select {
+            width: 250px;
+            padding-left: 25px;
+        }
+
+        #day-select {
+            width: 180px;
+            padding-left: 25px;
+        }
+
+        #side-select {
+            width: 180px;
+            padding-left: 25px;
+        }
+
+        #slowdown-input {
+            width: 120px;
+        }
+
+        #main-body {
+            margin-top: 20px;
+        }
+
+        #inner-body {
+            display: flex;
+            width: 100%;
+            min-height: 800px;
+        }
+
+        #input-value {
+            width: 200px;
+        }
+
+        #output-display {
+            width: 200px;
+        }
+
+        #exciting-bits {
+            width: 2120px;
+            font-size: 8px;
+        }
+
+        #debug-things {
+            margin-top: 20px;
+        }
+
+        .load-btn {
+            padding-left: 25px;
+        }
+
+        .fake-centered-text {
+            padding-top: 17px;
+        }
+    </style>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</head>
+
+<body>
+    <div id="aoc" class="nes-container is-dark">
+        <div id="header">
+            <i class="nes-icon is-medium star"></i><span class="fake-centered-text">Advent of Code - </span>
+            <span id="year-select" class="nes-select is-dark">
+                <select v-on:change="yearDayChange" v-model="year">
+                    <option value="" disabled selected hidden>Year...</option>
+                    <option>2015</option>
+                    <option>2016</option>
+                    <option>2017</option>
+                    <option>2018</option>
+                    <option>2019</option>
+                </select>
+            </span>
+            <span id="day-select" class="nes-select is-dark">
+                <select v-on:change="yearDayChange" v-model="day">
+                    <option value="" disabled selected hidden>Day...</option>
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4</option>
+                    <option>5</option>
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                    <option>11</option>
+                    <option>12</option>
+                    <option>13</option>
+                    <option>14</option>
+                    <option>15</option>
+                    <option>16</option>
+                    <option>17</option>
+                    <option>18</option>
+                    <option>19</option>
+                    <option>20</option>
+                    <option>21</option>
+                    <option>22</option>
+                    <option>23</option>
+                    <option>24</option>
+                    <option>25</option>
+                </select>
+            </span>
+            <span id="side-select" class="nes-select is-dark">
+                <select v-on:change="yearDayChange" v-model="side">
+                    <option value="" disabled selected hidden>Side...</option>
+                    <option>A</option>
+                    <option>B</option>
+                </select>
+            </span>
+            <span v-if="loaded">
+                <span class="load-btn"><a class="nes-btn is-primary" v-on:click="populateProperInput">MY
+                        INPUT</a></span>
+                <span class="load-btn" v-for="(input, index) in test_inputs">
+                    <a class="nes-btn is-success" v-on:click="populateTestData(index)">TEST {{index}}</a>
+                </span>
+            </span>
+            <span v-else id="load-side-choice">
+                <span class="load-btn">
+                    <a v-if="loaded" class="nes-btn is-success" v-on:click="loadPartOne">PART 1</a>
+                    <a v-else class="nes-btn is-error is-disabled">NO PUZZLE FOUND...</a>
+                </span>
+                <span class="load-btn">
+                    <a v-if="loaded" class="nes-btn is-success" v-on:click="loadPartTwo">PART 2</a>
+                </span>
+            </span>
+        </div>
+
+        <div id="main-body" class="nes-container is-dark">
+            <div id="inner-body">
+                <div id="exciting-bits" class="nes-container with-title is-centered is-dark">
+                    <p class="title">EXCITING THINGS</p>
+                    <div v-for="displayline in model.display">{{displayline}}</div>
+                </div>
+                <div id="output-display">
+                    <div v-if="loaded" id="puzzle-controls" class="nes-container with-title is-centered is-dark">
+                        <div v-if="ready">
+                            <p class="title">CONTROLS</p>
+                            <button type="button" class="nes-btn is-success" v-on:click="go">GO</button>
+                            <button v-if="going" type="button" class="nes-btn is-disabled">NEXT</button>
+                            <button v-else type="button" class="nes-btn is-warning" v-on:click="next">NEXT</button>
+                            <button type="button" class="nes-btn is-error" v-on:click="stop">STOP</button>
+                            <input id="slowdown-input" type="number" class="nes-input is-dark"
+                                v-on:change="slowdownChange" v-model="slowdown" placeholder="SLOW">
+                        </div>
+                        <div v-else>
+                            <p class="title">CONTROLS</p>
+                            <button v-if="restartable" type="button" class="nes-btn is-success"
+                                v-on:click="go">CONTINUE</button>
+                            <button v-else type="button" class="nes-btn is-disabled">GO</button>
+                            <button type="button" class="nes-btn is-disabled">NEXT</button>
+                            <button type="button" class="nes-btn is-disabled">STOP</button>
+                        </div>
+                    </div>
+                    <div v-if="expected_value" class="nes-container with-title is-centered is-dark">
+                        <p class="title">INPUT</p>
+                        <span>{{loaded_input}}</span>
+                    </div>
+                    <div v-if="expected_value" class="nes-container with-title is-centered is-dark">
+                        <p class="title">EXPECTED</p>
+                        <span>{{expected_value}}</span>
+                    </div>
+                    <div v-if="loaded" id="actual-output" class="nes-container with-title is-centered is-dark">
+                        <p class="title">OUTPUT</p>
+                        <span>{{model.output}}</span>
+                    </div>
+                </div>
+            </div>
+            <div id="debug-things" class="nes-container with-title is-centered is-dark">
+                <p class="title">POTENTIALLY LESS EXCITING THINGS</p>
+                <ul class="nes-list is-disc">
+                    <li v-for="line in model.debug">{{line}}</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        Vue.config.devtools = true;
+        var aoc = new Vue({
+            el: '#aoc',
+            data: {
+                message: 'Advent of Code',
+                year: '',
+                day: '',
+                side: '',
+                slowdown: 0,
+                loaded: false,
+                ready: false,
+                going: false,
+                restartable: false,
+                module: {},
+                model: { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 },
+                test_inputs: [],
+                test_outputs: [],
+                input: "",
+                loaded_input: "",
+                expected_value: null,
+            },
+            methods: {
+                yearDayChange: function (event) {
+                    var dayfile = "./" + this.year + "/" + this.day + this.side + ".js";
+                    import(dayfile)
+                        .then(daymodule => {
+                            if (daymodule.ok()) {
+                                this.module = daymodule;
+                                this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                                this.test_inputs = this.module.test_inputs();
+                                this.test_outputs = this.module.test_outputs();
+                                this.input = this.module.input();
+                                this.loaded = true;
+                                this.ready = false;
+                                this.going = false;
+                                this.restartable = false;
+                                this.expected_value = null;
+                                this.model.debug.unshift("Loaded side " + this.side + " of day " + this.day + " from year " + this.year + " with all available test inputs!");
+                            }
+                        })
+                        .catch(err => {
+                            console.log("couldn't load " + dayfile + ", err: " + err);
+                            this.module = {};
+                            this.loaded = false;
+                            this.ready = false;
+                            this.going = false;
+                            this.restartable = false;
+                            this.input = "";
+                            this.expected_value = null;
+                            this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                            this.test_inputs = [];
+                            this.test_outputs = [];
+                        })
+                },
+
+                slowdownChange() {
+                    if (this.slowdown < 0) {
+                        this.slowdown = 0;
+                    }
+                    this.model.slowdown = this.slowdown;
+                },
+
+                populateTestData: function (index) {
+                    this.loaded_input = this.test_inputs[index];
+                    this.expected_value = this.test_outputs[index];
+                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                    this.module.init(this.model, this.test_inputs[index]);
+                    this.model.debug.unshift("Initiated puzzle module with test value idx " + index + ":" + this.loaded_input);
+                    this.ready = true;
+                },
+
+                populateProperInput: function (event) {
+                    this.loaded_input = this.input;
+                    this.expected_value = false;
+                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                    this.module.init(this.model, this.input);
+                    this.model.debug.unshift("Initiated puzzle module with actual input!");
+                    this.ready = true;
+                },
+
+                async go() {
+                    this.going = true;
+                    this.model.debug.unshift(`Starting run-through of input with slowdown factor ${this.model.slowdown}`)
+                    while (!(this.model.halt)) {
+                        await this.module.step(this.model);
+                    }
+                    this.ready = false;
+                    this.going = false;
+                },
+
+                next: function (event) {
+                    this.module.step(this.model);
+                    this.ready = !this.model.halt;
+                },
+
+                stop: function (event) {
+                    this.model.halt = true;
+                    this.model.debug.unshift("Butts");
+                    this.model.restartable = true;
+                    this.model.debug.unshift(`restartable? ${this.model.restartable}`) // this is fucked for some reason
+                }
+            }
+        })
+    </script>
+</body>
