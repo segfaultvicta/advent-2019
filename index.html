@@ -65,6 +65,19 @@
         .fake-centered-text {
             padding-top: 17px;
         }
+
+        .force-wrap {
+            overflow-wrap: break-word;
+        }
+
+        .zoom-bulbasaur {
+            margin-top: 25px;
+        }
+
+        .zoom-explanation {
+            margin-top: 30px;
+            font-size: 16px;
+        }
     </style>
 
 
@@ -144,13 +157,23 @@
             <div id="inner-body">
                 <div id="exciting-bits" class="nes-container with-title is-centered is-dark">
                     <p class="title">EXCITING THINGS</p>
-                    <div v-for="displayline in model.display">{{displayline}}</div>
+                    <div v-if="zoom">
+                        <div class="zoom-explanation">You're in ZOOM MODE so nothing exciting will happen here OR in the
+                            debug area. Instead, have a cute bulbasaur.</div>
+                        <i class="zoom-bulbasaur nes-bulbasaur"></i>
+                        <div class="zoom-explanation">(ZOOM MODE disables all interactivity while the puzzle's puzzling.
+                            It makes the computer
+                            make the numbers go MUCH more zoomily but it means you'll spend a few seconds wondering if
+                            you h*cked everything up and are dealing with an infinite loop and therefore will not go to
+                            space today.)</div>
+                    </div>
+                    <div v-else v-for="displayline in model.display">{{displayline}}</div>
                 </div>
                 <div id="output-display">
                     <div v-if="loaded" id="puzzle-controls" class="nes-container with-title is-centered is-dark">
                         <div v-if="ready">
                             <p class="title">CONTROLS</p>
-                            <button type="button" class="nes-btn is-success" v-on:click="go">GO</button>
+                            <button type="button" class="nes-btn is-success" v-on:click="go">YEET</button>
                             <button v-if="going" type="button" class="nes-btn is-disabled">NEXT</button>
                             <button v-else type="button" class="nes-btn is-warning" v-on:click="next">NEXT</button>
                             <button type="button" class="nes-btn is-error" v-on:click="stop">STOP</button>
@@ -161,14 +184,24 @@
                             <p class="title">CONTROLS</p>
                             <button v-if="restartable" type="button" class="nes-btn is-success"
                                 v-on:click="go">CONTINUE</button>
-                            <button v-else type="button" class="nes-btn is-disabled">GO</button>
+                            <button v-else type="button" class="nes-btn is-disabled">YEET</button>
                             <button type="button" class="nes-btn is-disabled">NEXT</button>
                             <button type="button" class="nes-btn is-disabled">STOP</button>
                         </div>
                     </div>
-                    <div v-if="expected_value" class="nes-container with-title is-centered is-dark">
-                        <p class="title">INPUT</p>
-                        <span>{{loaded_input}}</span>
+                    <div v-if="ready" id="zoom-zoom" class="nes-container with-title is-centered is-dark">
+                        <p class="title">ZOOM?</p>
+                        <label>
+                            <input type="radio" class="nes-radio is-dark" name="answer-dark" v-model="zoom"
+                                v-bind:value="zoomYes" v-on:change="zoomChange" />
+                            <span>Yes</span>
+                        </label>
+
+                        <label>
+                            <input type="radio" class="nes-radio is-dark" name="answer-dark" v-model="zoom"
+                                v-bind:value="zoomNo" v-on:change="zoomChange" />
+                            <span>No</span>
+                        </label>
                     </div>
                     <div v-if="expected_value" class="nes-container with-title is-centered is-dark">
                         <p class="title">EXPECTED</p>
@@ -178,12 +211,14 @@
                         <p class="title">OUTPUT</p>
                         <span>{{model.output}}</span>
                     </div>
+
                 </div>
             </div>
-            <div id="debug-things" class="nes-container with-title is-centered is-dark">
+            <div v-if="zoom"></div>
+            <div v-else id="debug-things" class="nes-container with-title is-centered is-dark">
                 <p class="title">POTENTIALLY LESS EXCITING THINGS</p>
                 <ul class="nes-list is-disc">
-                    <li v-for="line in model.debug">{{line}}</li>
+                    <li class="force-wrap" v-for="line in model.debug">{{line}}</li>
                 </ul>
             </div>
         </div>
@@ -196,6 +231,8 @@
             el: '#aoc',
             data: {
                 message: 'Advent of Code',
+                zoomYes: true,
+                zoomNo: false,
                 year: '',
                 day: '',
                 side: '',
@@ -205,12 +242,13 @@
                 going: false,
                 restartable: false,
                 module: {},
-                model: { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 },
+                model: { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0, allow_debug: true },
                 test_inputs: [],
                 test_outputs: [],
                 input: "",
                 loaded_input: "",
                 expected_value: null,
+                zoom: false,
             },
             methods: {
                 yearDayChange: function (event) {
@@ -219,7 +257,7 @@
                         .then(daymodule => {
                             if (daymodule.ok()) {
                                 this.module = daymodule;
-                                this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                                this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0, allow_debug: true };
                                 this.test_inputs = this.module.test_inputs();
                                 this.test_outputs = this.module.test_outputs();
                                 this.input = this.module.input();
@@ -240,7 +278,7 @@
                             this.restartable = false;
                             this.input = "";
                             this.expected_value = null;
-                            this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                            this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0, allow_debug: true };
                             this.test_inputs = [];
                             this.test_outputs = [];
                         })
@@ -253,10 +291,14 @@
                     this.model.slowdown = this.slowdown;
                 },
 
+                zoomChange() {
+                    this.model.zoom = this.zoom;
+                },
+
                 populateTestData: function (index) {
                     this.loaded_input = this.test_inputs[index];
                     this.expected_value = this.test_outputs[index];
-                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0, allow_debug: true };
                     this.module.init(this.model, this.test_inputs[index]);
                     this.model.debug.unshift("Initiated puzzle module with test value idx " + index + ":" + this.loaded_input);
                     this.ready = true;
@@ -265,9 +307,9 @@
                 populateProperInput: function (event) {
                     this.loaded_input = this.input;
                     this.expected_value = false;
-                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0 };
+                    this.model = { input: [], display: [], debug: [], halt: false, ptr: 0, output: null, slowdown: 0, allow_debug: true };
                     this.module.init(this.model, this.input);
-                    this.model.debug.unshift("Initiated puzzle module with actual input!");
+                    this.model.debug.unshift(`Initiated puzzle module with actual input: ${this.input}`);
                     this.ready = true;
                 },
 
@@ -275,7 +317,11 @@
                     this.going = true;
                     this.model.debug.unshift(`Starting run-through of input with slowdown factor ${this.model.slowdown}`)
                     while (!(this.model.halt)) {
-                        await this.module.step(this.model);
+                        if (this.model.zoom) {
+                            this.module.step(this.model);
+                        } else {
+                            await this.module.step(this.model);
+                        }
                     }
                     this.ready = false;
                     this.going = false;
