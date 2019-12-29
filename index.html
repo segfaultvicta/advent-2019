@@ -4,7 +4,7 @@
     <style>
         html,
         body {
-            font-family: 'Press Start 2P', cursive;
+            font-family: 'Press Start 2P', monospace;
             background-color: #212529;
         }
 
@@ -77,6 +77,57 @@
         .zoom-explanation {
             margin-top: 30px;
             font-size: 16px;
+        }
+
+        .display-line {
+            white-space: pre;
+            text-align: center;
+        }
+
+        .display-red {
+            color: red;
+        }
+
+        .display-green {
+            color: #00ff00
+        }
+
+        .display-blue {
+            color: blue;
+        }
+
+        .display-yellow {
+            color: yellow;
+        }
+
+        .display-bold {
+            font-weight: bold;
+            -webkit-animation: glow 1s ease-in-out infinite alternate;
+            -moz-animation: glow 1s ease-in-out infinite alternate;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .display-tiny {
+            font-size: 4px;
+        }
+
+        .display-left {
+            text-align: left;
+            /* FIXME is there any actual way to unfuck this? */
+        }
+
+        .display-right {
+            text-align: right;
+        }
+
+        @-webkit-keyframes glow {
+            from {
+                text-shadow: 0 0 10px #fff, 0 0 20px #ccc, 0 0 30px #aaa, 0 0 40px #999, 0 0 50px #777, 0 0 60px #555, 0 0 70px #333;
+            }
+
+            to {
+                text-shadow: 0 0 20px #fff
+            }
         }
     </style>
 
@@ -156,7 +207,7 @@
         <div id="main-body" class="nes-container is-dark">
             <div id="inner-body">
                 <div id="exciting-bits" class="nes-container with-title is-centered is-dark">
-                    <p class="title">EXCITING THINGS</p>
+                    <p class="title display-bold">EXCITING THINGS</p>
                     <div v-if="zoom">
                         <div class="zoom-explanation">You're in ZOOM MODE so nothing exciting will happen here OR in the
                             debug area. Instead, have a cute bulbasaur.</div>
@@ -167,7 +218,9 @@
                             you h*cked everything up and are dealing with an infinite loop and therefore will not go to
                             space today.)</div>
                     </div>
-                    <div v-else v-for="displayline in model.display">{{displayline}}</div>
+                    <div v-else v-for="displayline in model.display">
+                        <div class="display-line" v-html="displayline"></div>
+                    </div>
                 </div>
                 <div id="output-display">
                     <div v-if="loaded" id="puzzle-controls" class="nes-container with-title is-centered is-dark">
